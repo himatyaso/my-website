@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2efe7">
+  <title>シナリオ管理 | TRPG</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f2efe7;
+      --surface: #fffefa;
+      --ink: #242a26;
+      --muted: #72796f;
+      --line: #deded3;
+      --green: #28634e;
+      --green-dark: #1c493a;
+      --coral: #c15d46;
+      --serif: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", Georgia, serif;
+      --sans: "Yu Gothic UI", "Meiryo", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: var(--sans); }
+    button, input, textarea { font: inherit; }
+    button, a { cursor: pointer; }
+    .topbar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 max(24px, calc((100vw - 1120px) / 2)); border-bottom: 1px solid #d9d8ce; background: rgba(255,254,250,.96); }
+    .brand { display: inline-flex; align-items: center; gap: 11px; color: inherit; font: 18px var(--serif); text-decoration: none; }
+    .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--green); font: 17px Georgia, serif; }
+    .home-link { color: var(--green-dark); font-size: 12px; text-decoration: none; }
+    .home-link:hover { text-decoration: underline; }
+    main { width: min(100% - 40px, 1120px); margin: 44px auto 72px; }
+    .intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid #d6d7cc; }
+    .eyebrow { margin: 0 0 9px; color: var(--coral); font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+    h1 { margin: 0; font: 34px/1.35 var(--serif); }
+    .intro-copy { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+    .count { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+    .layout { display: grid; grid-template-columns: minmax(190px, 240px) minmax(300px, .95fr) minmax(260px, .8fr); align-items: start; gap: 20px; padding-top: 26px; }
+    .panel { min-width: 0; padding: 18px; border: 1px solid #d6d9d1; border-radius: 3px; background: var(--surface); box-shadow: 0 5px 16px rgba(30,35,31,.06); }
+    .panel h2 { margin: 0; font: 20px var(--serif); }
+    .list-panel { position: sticky; top: 16px; }
+    .search, .field input, .field textarea { width: 100%; min-width: 0; border: 1px solid #d8d9cf; border-radius: 3px; outline: none; background: var(--surface); color: var(--ink); font-size: 13px; }
+    .search { height: 38px; padding: 0 10px; margin: 14px 0 10px; }
+    .field input { height: 39px; padding: 0 10px; }
+    .field textarea { min-height: 100px; padding: 9px 10px; line-height: 1.7; resize: vertical; }
+    .search:focus, .field input:focus, .field textarea:focus { border-color: #70917d; box-shadow: 0 0 0 3px rgba(40,99,78,.1); }
+    .scenario-list { display: grid; gap: 5px; max-height: 62vh; overflow-y: auto; }
+    .scenario-row { width: 100%; padding: 10px; border: 1px solid transparent; border-radius: 3px; color: var(--ink); background: transparent; text-align: left; }
+    .scenario-row:hover { background: #f6f5ee; }
+    .scenario-row[aria-current="true"] { border-color: #d1d9cf; background: #f5f7f1; }
+    .scenario-row strong { display: block; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+    .scenario-row span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .empty { margin: 12px 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+    .form-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+    .fields { display: grid; gap: 14px; }
+    .field { display: grid; gap: 6px; }
+    .field label, .npc-heading { color: #555e56; font-size: 11px; font-weight: 600; }
+    .required { color: var(--coral); }
+    .npc-fieldset { min-width: 0; margin: 18px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: 3px; }
+    .npc-fieldset legend { padding: 0 5px; color: #555e56; font-size: 11px; font-weight: 600; }
+    .npc-options { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
+    .npc-option { display: flex; align-items: flex-start; gap: 8px; padding: 6px; border-radius: 3px; font-size: 12px; line-height: 1.5; cursor: pointer; }
+    .npc-option:hover { background: #f6f5ee; }
+    .npc-option input { margin: 3px 0 0; accent-color: var(--green); }
+    .npc-option small { display: block; color: var(--muted); font-size: 10px; }
+    .form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 7px; padding: 0 13px; border: 1px solid var(--line); border-radius: 3px; color: var(--ink); background: var(--surface); text-decoration: none; font-size: 12px; }
+    .button:hover { border-color: #9eaa9e; background: #f8f8f1; }
+    .button.primary { border-color: var(--green); color: white; background: var(--green); }
+    .button.primary:hover { background: var(--green-dark); }
+    .button.danger { color: #a54234; }
+    .preview { position: sticky; top: 16px; }
+    .preview-title { margin: 14px 0 10px; font: 25px/1.45 var(--serif); overflow-wrap: anywhere; }
+    .preview-overview { color: #505a51; font-size: 13px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .preview-url { display: inline-block; margin-top: 12px; color: var(--green-dark); font-size: 12px; overflow-wrap: anywhere; }
+    .preview h3 { margin: 24px 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font: 17px var(--serif); }
+    .npc-card { display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #ecece5; }
+    .npc-image { width: 54px; height: 64px; display: grid; place-items: center; overflow: hidden; border-radius: 3px; color: #fff; background: var(--npc-color, #888); font-size: 9px; text-align: center; }
+    .npc-image img { width: 100%; height: 100%; object-fit: contain; }
+    .npc-name { margin: 0; font-size: 13px; }
+    .npc-detail { margin: 3px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+    .status { min-height: 20px; margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .status[data-error="true"] { color: #a54234; }
+    [hidden] { display: none !important; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: minmax(180px, .7fr) minmax(280px, 1.3fr); }
+      .preview { position: static; grid-column: 2; }
+      .list-panel { grid-row: span 2; }
+    }
+    @media (max-width: 640px) {
+      .topbar { min-height: 64px; padding: 0 18px; }
+      .brand { font-size: 15px; }
+      main { width: min(100% - 30px, 1120px); margin-top: 32px; }
+      .intro { align-items: flex-start; flex-direction: column; gap: 8px; }
+      h1 { font-size: 29px; }
+      .layout { grid-template-columns: 1fr; gap: 13px; }
+      .list-panel, .preview { position: static; grid-column: auto; grid-row: auto; }
+      .scenario-list { max-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">✦</span><span>TRPG シナリオ管理</span></a>
+    <a class="home-link" href="index.html">← 管理室へ戻る</a>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="pageTitle">
+      <div>
+        <p class="eyebrow">SCENARIO ARCHIVE</p>
+        <h1 id="pageTitle">シナリオ</h1>
+        <p class="intro-copy">キャラクター書庫やNPC登録で選んだシナリオも一覧に表示されます。概要やURL、登場するNPCをまとめて管理できます。</p>
+      </div>
+      <p class="count" id="count" aria-live="polite">0 件</p>
+    </section>
+    <div class="layout">
+      <section class="panel list-panel" aria-labelledby="listTitle">
+        <h2 id="listTitle">シナリオ一覧</h2>
+        <input class="search" id="search" type="search" placeholder="タイトルで検索" aria-label="シナリオを検索">
+        <div class="scenario-list" id="scenarioList" aria-live="polite"></div>
+      </section>
+      <form class="panel" id="scenarioForm">
+        <div class="form-heading">
+          <h2 id="formTitle">新しいシナリオ</h2>
+          <button class="button" id="newButton" type="button">＋ 新規作成</button>
+        </div>
+        <div class="fields">
+          <div class="field">
+            <label for="title">タイトル <span class="required">*</span></label>
+            <input id="title" name="title" type="text" required maxlength="160" autocomplete="off" placeholder="シナリオのタイトル">
+          </div>
+          <div class="field">
+            <label for="overview">概要</label>
+            <textarea id="overview" name="overview" maxlength="5000" placeholder="あらすじやメモ"></textarea>
+          </div>
+          <div class="field">
+            <label for="url">URL</label>
+            <input id="url" name="url" type="url" maxlength="2048" autocomplete="url" placeholder="https://">
+          </div>
+        </div>
+        <fieldset class="npc-fieldset">
+          <legend>登場NPC（選択して表示）</legend>
+          <div class="npc-options" id="npcOptions"></div>
+        </fieldset>
+        <div class="form-actions">
+          <button class="button primary" type="submit" id="saveButton">シナリオを保存</button>
+        </div>
+        <p class="status" id="status" role="status" aria-live="polite">このブラウザーに保存されます</p>
+      </form>
+      <section class="panel preview" aria-labelledby="previewHeading">
+        <h2 id="previewHeading">シナリオ表示</h2>
+        <h3 class="preview-title" id="previewTitle">シナリオを選択してください</h3>
+        <p class="preview-overview" id="previewOverview"></p>
+        <a class="preview-url" id="previewUrl" target="_blank" rel="noopener noreferrer" hidden></a>
+        <h3>登場NPC</h3>
+        <div id="previewNpcs"><p class="empty">NPCを選択すると、ここに表示されます。</p></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    "use strict";
+
+    const SCENARIO_STORAGE_KEY = "trpg-scenarios";
+    const SCENARIO_OPTIONS_KEY = "trpg-npc-scenarios";
+    const NPC_DATABASE_NAME = "trpg-npc-library";
+    const CHARACTER_DATABASE_NAME = "trpg-character-library";
+    const scenarioList = document.getElementById("scenarioList");
+    const scenarioForm = document.getElementById("scenarioForm");
+    const statusElement = document.getElementById("status");
+    let scenarios = [];
+    let npcs = [];
+    let selectedId = null;
+    let loading = false;
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>\"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[character]));
+    }
+
+    function setStatus(message, error = false) {
+      statusElement.textContent = message;
+      statusElement.dataset.error = String(error);
+    }
+
+    function readScenarioRecords() {
+      let saved;
+      try {
+        saved = JSON.parse(localStorage.getItem(SCENARIO_STORAGE_KEY) || "[]");
+      } catch (error) {
+        throw new Error(`シナリオ情報を読み込めませんでした: ${error.message}`);
+      }
+      if (!Array.isArray(saved)) throw new Error("保存されたシナリオ情報の形式が正しくありません");
+      return saved.filter(item => item && typeof item === "object" && typeof item.title === "string" && item.title.trim());
+    }
+
+    function readScenarioOptions() {
+      let saved;
+      try {
+        saved = JSON.parse(localStorage.getItem(SCENARIO_OPTIONS_KEY) || "[]");
+      } catch (error) {
+        throw new Error(`シナリオ候補を読み込めませんでした: ${error.message}`);
+      }
+      if (!Array.isArray(saved)) throw new Error("保存されたシナリオ候補の形式が正しくありません");
+      return saved.filter(value => typeof value === "string" && value.trim());
+    }
+
+    async function readExistingStore(databaseName, storeName) {
+      if (typeof indexedDB.databases !== "function") return [];
+      const databases = await indexedDB.databases();
+      if (!databases.some(item => item.name === databaseName)) return [];
+      const database = await new Promise((resolve, reject) => {
+        const request = indexedDB.open(databaseName);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+        request.onblocked = () => reject(new Error("データベースが別の画面で使用中です"));
+      });
+      try {
+        if (!database.objectStoreNames.contains(storeName)) return [];
+        return await new Promise((resolve, reject) => {
+          const request = database.transaction(storeName, "readonly").objectStore(storeName).getAll();
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      } finally {
+        database.close();
+      }
+    }
+
+    function mergeTitles(titles, previousScenarios = scenarios) {
+      const titleSet = new Set(scenarios.map(item => item.title));
+      titles.forEach(title => {
+        if (typeof title !== "string" || !title.trim()) return;
+        const normalizedTitle = title.trim();
+        if (titleSet.has(normalizedTitle)) return;
+        titleSet.add(normalizedTitle);
+        const previous = previousScenarios.find(item => item.title === normalizedTitle);
+        scenarios.push(previous || {
+          id: crypto.randomUUID(),
+          title: normalizedTitle,
+          overview: "",
+          url: "",
+          npcIds: npcs.filter(npc => npc.fields?.scenario === normalizedTitle).map(npc => npc.id),
+        });
+      });
+    }
+
+    async function loadData() {
+      if (loading) return;
+      loading = true;
+      try {
+        const previousScenarios = scenarios;
+        scenarios = readScenarioRecords();
+        const [scenarioOptions, npcRecords, characters] = await Promise.all([
+          Promise.resolve(readScenarioOptions()),
+          readExistingStore(NPC_DATABASE_NAME, "npcs"),
+          readExistingStore(CHARACTER_DATABASE_NAME, "characters"),
+        ]);
+        npcs = npcRecords.filter(npc => npc && typeof npc.id === "string");
+        const characterScenarios = characters.flatMap(character => Array.isArray(character.fields?.passedScenarios) ? character.fields.passedScenarios : []);
+        const discoveredTitles = [...scenarioOptions, ...npcRecords.map(npc => npc.fields?.scenario), ...characterScenarios];
+        const knownTitles = new Set(scenarios.map(item => item.title));
+        const hasNewTitles = discoveredTitles.some(title => typeof title === "string" && title.trim() && !knownTitles.has(title));
+        mergeTitles(discoveredTitles, previousScenarios);
+        if (hasNewTitles) {
+          setStatus("登録済みのシナリオを一覧に反映しました。保存するとシナリオ候補にも同期されます");
+        }
+        renderAll();
+      } catch (error) {
+        setStatus(error.message, true);
+      } finally {
+        loading = false;
+      }
+    }
+
+    function getSelectedScenario() {
+      return scenarios.find(item => item.id === selectedId) || null;
+    }
+
+    function selectedNpcIds() {
+      return [...document.querySelectorAll("#npcOptions input:checked")].map(input => input.value);
+    }
+
+    function associatedNpcs(scenario) {
+      if (!scenario) return [];
+      if (Array.isArray(scenario.npcIds)) {
+        const chosen = new Set(scenario.npcIds);
+        return npcs.filter(npc => chosen.has(npc.id));
+      }
+      return npcs.filter(npc => npc.fields?.scenario === scenario.title);
+    }
+
+    function renderScenarioList() {
+      const query = document.getElementById("search").value.trim().toLocaleLowerCase("ja");
+      const filtered = [...scenarios]
+        .filter(item => item.title.toLocaleLowerCase("ja").includes(query))
+        .sort((left, right) => left.title.localeCompare(right.title, "ja"));
+      document.getElementById("count").textContent = `${scenarios.length} 件`;
+      if (!filtered.length) {
+        scenarioList.innerHTML = `<p class="empty">${scenarios.length ? "検索条件に合うシナリオはありません。" : "シナリオはまだありません。ここで追加するか、NPC登録またはキャラクター書庫でシナリオを選択してください。"}</p>`;
+        return;
+      }
+      scenarioList.innerHTML = filtered.map(item => `<button class="scenario-row" type="button" data-id="${escapeHtml(item.id)}" aria-current="${item.id === selectedId}"><strong>${escapeHtml(item.title)}</strong><span>${associatedNpcs(item).length} 人のNPC</span></button>`).join("");
+    }
+
+    function renderNpcOptions(scenario, checkedIds = null) {
+      const checked = new Set(checkedIds || (scenario ? associatedNpcs(scenario).map(npc => npc.id) : []));
+      const options = npcs.map(npc => {
+        const name = npc.fields?.name || "名前未設定";
+        const detail = npc.fields?.scenario || npc.fields?.handout || "";
+        return `<label class="npc-option"><input type="checkbox" value="${escapeHtml(npc.id)}"${checked.has(npc.id) ? " checked" : ""}><span>${escapeHtml(name)}${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</span></label>`;
+      }).join("");
+      document.getElementById("npcOptions").innerHTML = options || `<p class="empty">NPCがいません。<a href="TRPG_NPC管理.html">NPC登録</a>から追加できます。</p>`;
+    }
+
+    function renderPreview(scenario, npcList = associatedNpcs(scenario)) {
+      document.getElementById("previewTitle").textContent = scenario?.title || "シナリオを選択してください";
+      document.getElementById("previewOverview").textContent = scenario?.overview || "";
+      const urlElement = document.getElementById("previewUrl");
+      urlElement.hidden = true;
+      urlElement.removeAttribute("href");
+      if (scenario?.url) {
+        try {
+          const url = new URL(scenario.url);
+          if (url.protocol === "https:" || url.protocol === "http:") {
+            urlElement.href = url.href;
+            urlElement.textContent = scenario.url;
+            urlElement.hidden = false;
+          }
+        } catch {}
+      }
+      const previewNpcs = document.getElementById("previewNpcs");
+      if (!npcList.length) {
+        previewNpcs.innerHTML = `<p class="empty">${npcs.length ? "このシナリオに表示するNPCは選択されていません。" : "NPCはまだ登録されていません。"}</p>`;
+        return;
+      }
+      previewNpcs.innerHTML = npcList.map(npc => {
+        const name = npc.fields?.name || "名前未設定";
+        const color = /^#[0-9a-fA-F]{6}$/.test(npc.themeColor || "") ? npc.themeColor : "#888888";
+        const image = typeof npc.image === "string" && npc.image.startsWith("data:image/") ? `<img src="${escapeHtml(npc.image)}" alt="">` : "画像なし";
+        const detail = [npc.fields?.handout, npc.fields?.memo].filter(Boolean).join(" / ");
+        return `<article class="npc-card"><div class="npc-image" style="--npc-color:${color}">${image}</div><div><h4 class="npc-name">${escapeHtml(name)}</h4><p class="npc-detail">${escapeHtml(detail || npc.fields?.scenario || "NPC")}</p></div></article>`;
+      }).join("");
+    }
+
+    function renderForm(scenario) {
+      document.getElementById("formTitle").textContent = scenario ? "シナリオを編集" : "新しいシナリオ";
+      document.getElementById("saveButton").textContent = scenario ? "変更を保存" : "シナリオを保存";
+      document.getElementById("title").value = scenario?.title || "";
+      document.getElementById("overview").value = scenario?.overview || "";
+      document.getElementById("url").value = scenario?.url || "";
+      renderNpcOptions(scenario);
+    }
+
+    function renderAll() {
+      const scenario = getSelectedScenario();
+      renderScenarioList();
+      renderForm(scenario);
+      updatePreviewFromForm();
+    }
+
+    function updatePreviewFromForm() {
+      const scenario = {
+        title: document.getElementById("title").value.trim(),
+        overview: document.getElementById("overview").value.trim(),
+        url: document.getElementById("url").value.trim(),
+      };
+      const checkedIds = new Set(selectedNpcIds());
+      renderPreview(scenario, npcs.filter(npc => checkedIds.has(npc.id)));
+    }
+
+    function persistScenarios() {
+      const previousScenarios = localStorage.getItem(SCENARIO_STORAGE_KEY);
+      const previousOptions = localStorage.getItem(SCENARIO_OPTIONS_KEY);
+      try {
+        const titles = [...new Set(scenarios.map(item => item.title.trim()).filter(Boolean))];
+        localStorage.setItem(SCENARIO_STORAGE_KEY, JSON.stringify(scenarios));
+        localStorage.setItem(SCENARIO_OPTIONS_KEY, JSON.stringify(titles));
+        return true;
+      } catch (error) {
+        try {
+          if (previousScenarios === null) localStorage.removeItem(SCENARIO_STORAGE_KEY);
+          else localStorage.setItem(SCENARIO_STORAGE_KEY, previousScenarios);
+          if (previousOptions === null) localStorage.removeItem(SCENARIO_OPTIONS_KEY);
+          else localStorage.setItem(SCENARIO_OPTIONS_KEY, previousOptions);
+          setStatus(`保存できませんでした: ${error.message}`, true);
+        } catch (rollbackError) {
+          setStatus(`保存に失敗し、元のデータへ戻せませんでした: ${error.message} / ${rollbackError.message}`, true);
+        }
+        return false;
+      }
+    }
+
+    scenarioList.addEventListener("click", event => {
+      const button = event.target.closest("[data-id]");
+      if (!button) return;
+      selectedId = button.dataset.id;
+      renderAll();
+    });
+
+    document.getElementById("search").addEventListener("input", renderScenarioList);
+    document.getElementById("newButton").addEventListener("click", () => {
+      selectedId = null;
+      renderAll();
+      document.getElementById("title").focus();
+      setStatus("新しいシナリオを入力してください");
+    });
+
+    document.getElementById("npcOptions").addEventListener("change", updatePreviewFromForm);
+    scenarioForm.addEventListener("input", event => {
+      if (event.target.id === "title" || event.target.id === "overview" || event.target.id === "url") updatePreviewFromForm();
+    });
+
+    scenarioForm.addEventListener("submit", event => {
+      event.preventDefault();
+      const title = document.getElementById("title").value.trim();
+      const overview = document.getElementById("overview").value.trim();
+      const rawUrl = document.getElementById("url").value.trim();
+      if (!title) {
+        document.getElementById("title").focus();
+        return;
+      }
+      let url = "";
+      if (rawUrl) {
+        try {
+          const parsed = new URL(rawUrl);
+          if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error("URLはhttpまたはhttpsで入力してください");
+          url = parsed.href;
+        } catch (error) {
+          setStatus(error.message === "Invalid URL" ? "URLの形式を確認してください" : error.message, true);
+          document.getElementById("url").focus();
+          return;
+        }
+      }
+      const duplicate = scenarios.find(item => item.title === title && item.id !== selectedId);
+      if (duplicate) {
+        setStatus("同じタイトルのシナリオがすでにあります。一覧から選択して編集してください", true);
+        return;
+      }
+      const existing = getSelectedScenario();
+      const scenario = {
+        id: existing?.id || crypto.randomUUID(),
+        title,
+        overview,
+        url,
+        npcIds: selectedNpcIds(),
+        updatedAt: Date.now(),
+      };
+      if (existing) scenarios = scenarios.map(item => item.id === existing.id ? scenario : item);
+      else scenarios = [...scenarios, scenario];
+      selectedId = scenario.id;
+      if (!persistScenarios()) return;
+      renderAll();
+      setStatus("シナリオを保存し、キャラクター書庫・NPC登録の候補にも同期しました");
+    });
+
+    window.addEventListener("storage", event => {
+      if (event.key !== SCENARIO_STORAGE_KEY && event.key !== SCENARIO_OPTIONS_KEY) return;
+      loadData();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
